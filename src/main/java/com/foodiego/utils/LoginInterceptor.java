@@ -18,6 +18,16 @@ public class LoginInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        // Browsing is public; writes still require authentication.
+        String path = request.getServletPath();
+        if (path.isEmpty()) {
+            path = request.getRequestURI().substring(request.getContextPath().length());
+        }
+        if (("GET".equals(request.getMethod()) || "HEAD".equals(request.getMethod())) &&
+                (path.startsWith("/shop/") || path.startsWith("/shop-type/") ||
+                        path.startsWith("/voucher/list/"))) {
+            return true;
+        }
         if (UserHolder.getUser() == null) {
             response.setStatus(401);
             return false;

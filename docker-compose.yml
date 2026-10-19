@@ -13,6 +13,7 @@ services:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+      - ./src/main/resources/db/hmdp.sql:/docker-entrypoint-initdb.d/01-foodiego.sql:ro
     logging:
       driver: "json-file"
       options:
@@ -29,6 +30,9 @@ services:
     image: redis:7-alpine
     container_name: foodiego-redis
     restart: always
+    command: ["redis-server", "--requirepass", "123456", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
     ports:
       - "6379:6379"
     # ==== 资源限制 ====
@@ -92,8 +96,13 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: rabbitmq
       RABBITMQ_PASSWORD: rabbitmq
+      FOODIEGO_ADMIN_USER_IDS: ${FOODIEGO_ADMIN_USER_IDS:-}
+      FOODIEGO_SECKILL_ZONE_ID: ${FOODIEGO_SECKILL_ZONE_ID:-Asia/Shanghai}
+      FOODIEGO_UPLOAD_DIR: /app/uploads
       # 调小 JVM 堆，给系统和其他容器留更多内存
       JAVA_OPTS: "-Xms128m -Xmx256m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+    volumes:
+      - uploads-data:/app/uploads
     logging:
       driver: "json-file"
       options:
@@ -111,3 +120,4 @@ volumes:
   mysql-data:
   redis-data:
   rabbitmq-data:
+  uploads-data:

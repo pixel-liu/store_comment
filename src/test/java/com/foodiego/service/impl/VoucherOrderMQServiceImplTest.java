@@ -58,6 +58,12 @@ class VoucherOrderMQServiceImplTest {
     @MockBean
     private VoucherOrderMapper voucherOrderMapper;
 
+    @MockBean
+    private com.foodiego.mapper.SeckillVoucherMapper seckillVoucherMapper;
+
+    @MockBean
+    private com.foodiego.mapper.VoucherOrderFailureMapper voucherOrderFailureMapper;
+
     @BeforeEach
     void setUp() {
         // Set up a mock user in ThreadLocal
@@ -67,7 +73,8 @@ class VoucherOrderMQServiceImplTest {
         UserHolder.saveUser(testUser);
 
         // Replace async MQ executor with synchronous one for deterministic testing
-        setField("ASYNC_MQ_EXECUTOR", new ThreadPoolExecutor(
+        voucherOrderService.asyncMqExecutor.shutdownNow();
+        setField("asyncMqExecutor", new ThreadPoolExecutor(
                 1, 1, 60L, java.util.concurrent.TimeUnit.SECONDS,
                 new java.util.concurrent.LinkedBlockingQueue<>(10),
                 new ThreadPoolExecutor.CallerRunsPolicy()
@@ -77,6 +84,7 @@ class VoucherOrderMQServiceImplTest {
     @AfterEach
     void tearDown() {
         UserHolder.removeUser();
+        voucherOrderService.asyncMqExecutor.shutdownNow();
     }
 
     // ────────────────────── secKillVoucher() tests ──────────────────────
@@ -247,7 +255,7 @@ class VoucherOrderMQServiceImplTest {
         try {
             java.lang.reflect.Field field = VoucherOrderMQServiceImpl.class.getDeclaredField(fieldName);
             field.setAccessible(true);
-            field.set(null, value);
+            field.set(voucherOrderService, value);
         } catch (Exception e) {
             throw new RuntimeException("Failed to set field " + fieldName, e);
         }

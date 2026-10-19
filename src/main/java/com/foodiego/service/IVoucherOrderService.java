@@ -28,5 +28,9 @@ public interface IVoucherOrderService extends IService<VoucherOrder> {
 
     void handleVoucherOrder(VoucherOrderDTO voucherOrderDTO);
 
+    default boolean markOrderFailed(VoucherOrderDTO order) {
+        throw new UnsupportedOperationException("Failure handling is not supported by this implementation");
+    }
+
     Result voucher(Long voucherId);
 }

@@ -7,6 +7,9 @@ import com.foodiego.dto.VoucherOrderDTO;
 import com.foodiego.entity.SeckillVoucher;
 import com.foodiego.entity.VoucherOrder;
 import com.foodiego.mapper.VoucherOrderMapper;
+import com.foodiego.mapper.SeckillVoucherMapper;
+import com.foodiego.mapper.VoucherOrderFailureMapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.foodiego.service.ISeckillVoucherService;
 import com.foodiego.service.IVoucherOrderService;
 import com.foodiego.utils.RedisConstants;
@@ -16,7 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
@@ -25,14 +27,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
-import java.time.LocalDateTime;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static com.foodiego.config.RabbitMQConfig.SECKILL_ORDER_EXCHANGE;
 import static com.foodiego.config.RabbitMQConfig.SECKILL_ORDER_ROUTING_KEY;
@@ -50,6 +49,10 @@ VoucherOrderMQServiceImpl extends ServiceImpl<VoucherOrderMapper, VoucherOrder> 
     private StringRedisTemplate stringRedisTemplate;
     @Resource
     private RabbitTemplate rabbitTemplate;
+    @Resource
+    private SeckillVoucherMapper seckillVoucherMapper;
+    @Resource
+    private VoucherOrderFailureMapper voucherOrderFailureMapper;
 
     private static final DefaultRedisScript<Long> SECKILL_SCRIPT;
 
@@ -63,8 +66,8 @@ VoucherOrderMQServiceImpl extends ServiceImpl<VoucherOrderMapper, VoucherOrder> 
     // 优雅停机标记，防止 @Scheduled 在关闭期间继续访问 Redis
     private final AtomicBoolean shuttingDown = new AtomicBoolean(false);
 
-    // Package-private non-final for testability — allows tests to inject a synchronous executor
-    static ThreadPoolExecutor ASYNC_MQ_EXECUTOR = new ThreadPoolExecutor(
+    // Instance-owned executor so closing one context never shuts down another instance.
+    ThreadPoolExecutor asyncMqExecutor = new ThreadPoolExecutor(
             4, 8, 60L, TimeUnit.SECONDS,
             new LinkedBlockingQueue<>(5000),
             r -> {
@@ -79,18 +82,19 @@ VoucherOrderMQServiceImpl extends ServiceImpl<VoucherOrderMapper, VoucherOrder> 
     public void shutdown() {
         shuttingDown.set(true);  // 先标记停机，阻止 @Scheduled 继续访问 Redis/MySQL
         log.info("开始关闭 MQ 异步发送线程池... 队列中待处理任务: {}",
-                ASYNC_MQ_EXECUTOR.getQueue().size());
+                asyncMqExecutor.getQueue().size());
+        asyncMqExecutor.shutdown();
         try {
-            if (!ASYNC_MQ_EXECUTOR.awaitTermination(10, TimeUnit.SECONDS)) {
+            if (!asyncMqExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
                 log.warn("线程池未在 10s 内完成，强制关闭，剩余任务: {}",
-                        ASYNC_MQ_EXECUTOR.getQueue().size());
-                ASYNC_MQ_EXECUTOR.shutdownNow();
+                        asyncMqExecutor.getQueue().size());
+                asyncMqExecutor.shutdownNow();
             } else {
                 log.info("MQ 异步发送线程池已优雅关闭");
             }
         } catch (InterruptedException e) {
             log.error("等待线程池关闭被中断", e);
-            ASYNC_MQ_EXECUTOR.shutdownNow();
+            asyncMqExecutor.shutdownNow();
             Thread.currentThread().interrupt();
         }
     }
@@ -103,20 +107,37 @@ VoucherOrderMQServiceImpl extends ServiceImpl<VoucherOrderMapper, VoucherOrder> 
      * 1. RedisIdWorker 批量预取ID，消除每次 Redis INCR 调用
      * 2. MQ 异步发送，消除 broker 确认的阻塞等待（~2ms）
      * 3. 异步失败时写入 Redis List 兜底，后续补偿
-     * 4. Redis Hash 缓存活动时间，快速校验有效期
+     * 4. Lua 使用 Redis 时钟校验活动时间，与扣库存保持原子性
      */
     @Override
     public Result secKillVoucher(Long voucherId) {
+        if (UserHolder.getUser() == null) {
+            return Result.fail("请先登录");
+        }
+        if (voucherId == null || voucherId <= 0) {
+            return Result.fail("优惠券ID无效");
+        }
         Long userId = UserHolder.getUser().getId();
         // 1. 执行 Lua 脚本（Redis 原子校验 + 扣库存 + 标记用户）
         Long result = stringRedisTemplate.execute(SECKILL_SCRIPT,
-                Collections.emptyList(), voucherId.toString(), userId.toString());
-        int r = result.intValue();
+                Arrays.asList(RedisConstants.SECKILL_STOCK_KEY + voucherId,
+                        RedisConstants.SECKILL_INFO_KEY + voucherId, "seckill:order:" + voucherId),
+                voucherId.toString(), userId.toString());
+        int r = result == null ? -1 : result.intValue();
         if (r == 1) {
             return Result.fail("库存不足");
         }
         if (r == 2) {
             return Result.fail("不能重复下单");
+        }
+        if (r == 3) {
+            return Result.fail("秒杀活动不存在或已下线");
+        }
+        if (r == 4) {
+            return Result.fail("秒杀尚未开始");
+        }
+        if (r == 5) {
+            return Result.fail("秒杀已经结束");
         }
         if (r != 0) {
             return Result.fail("秒杀失败");
@@ -132,7 +153,7 @@ VoucherOrderMQServiceImpl extends ServiceImpl<VoucherOrderMapper, VoucherOrder> 
         dto.setUserId(userId);
 
         // 4. 异步发送 MQ，不阻塞主线程
-        ASYNC_MQ_EXECUTOR.submit(() -> {
+        asyncMqExecutor.submit(() -> {
             long sendStart = System.currentTimeMillis();
             try {
                 rabbitTemplate.convertAndSend(SECKILL_ORDER_EXCHANGE, SECKILL_ORDER_ROUTING_KEY, dto);
@@ -214,25 +235,61 @@ VoucherOrderMQServiceImpl extends ServiceImpl<VoucherOrderMapper, VoucherOrder> 
         }
     }
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void handleVoucherOrder(VoucherOrderDTO voucherOrderDTO) {
-        // 扣减库存（乐观锁）
+        // Serialize deliveries across instances before inspecting committed orders.
+        SeckillVoucher activity = seckillVoucherMapper.selectForUpdate(voucherOrderDTO.getVoucherId());
+        if (activity == null) {
+            throw new IllegalStateException("秒杀活动不存在");
+        }
+        if (voucherOrderFailureMapper.countByOrderId(voucherOrderDTO.getId()) > 0) {
+            return;
+        }
+        VoucherOrder existing = getById(voucherOrderDTO.getId());
+        if (existing != null) {
+            if (!existing.getUserId().equals(voucherOrderDTO.getUserId()) ||
+                    !existing.getVoucherId().equals(voucherOrderDTO.getVoucherId())) {
+                throw new IllegalStateException("订单ID与业务信息不匹配");
+            }
+            return;
+        }
+        if (baseMapper.selectCount(new LambdaQueryWrapper<VoucherOrder>()
+                .eq(VoucherOrder::getUserId, voucherOrderDTO.getUserId())
+                .eq(VoucherOrder::getVoucherId, voucherOrderDTO.getVoucherId())) > 0) {
+            return;
+        }
         boolean updateSuccess = iSeckillVoucherService.update()
                 .setSql("stock = stock - 1")
                 .eq("voucher_id", voucherOrderDTO.getVoucherId())
                 .gt("stock", 0)
                 .update();
         if (!updateSuccess) {
-            log.info("库存不足，订单创建失败: {}", voucherOrderDTO.getId());
-            return;
+            throw new IllegalStateException("库存不足，订单创建失败: " + voucherOrderDTO.getId());
         }
-        // 插入订单（唯一索引兜底去重）
-        try {
-            VoucherOrder voucherOrder = BeanUtil.copyProperties(voucherOrderDTO, VoucherOrder.class);
-            save(voucherOrder);
-        } catch (DuplicateKeyException e) {
-            log.info("重复下单，订单创建失败: {}", voucherOrderDTO.getId());
+        // Insertion failures must roll back the stock decrement as well.
+        VoucherOrder voucherOrder = BeanUtil.copyProperties(voucherOrderDTO, VoucherOrder.class);
+        if (!save(voucherOrder)) {
+            throw new IllegalStateException("订单保存失败");
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean markOrderFailed(VoucherOrderDTO order) {
+        // Shares the same lock as normal processing: failure and success cannot race.
+        if (seckillVoucherMapper.selectForUpdate(order.getVoucherId()) == null) {
+            throw new IllegalStateException("秒杀活动不存在");
+        }
+        if (getById(order.getId()) != null || baseMapper.selectCount(
+                new LambdaQueryWrapper<VoucherOrder>()
+                        .eq(VoucherOrder::getUserId, order.getUserId())
+                        .eq(VoucherOrder::getVoucherId, order.getVoucherId())) > 0) {
+            return false;
+        }
+        if (voucherOrderFailureMapper.countByOrderId(order.getId()) == 0) {
+            voucherOrderFailureMapper.insert(order);
+        }
+        return true;
     }
 
     @Override

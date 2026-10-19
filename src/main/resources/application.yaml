@@ -16,7 +16,7 @@ spring:
     hikari:
       maximum-pool-size: 50
   rabbitmq:
-    addresses: ${RABBITMQ_HOST:192.168.150.100}
+    host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USER:rabbitmq}
     password: ${RABBITMQ_PASSWORD:rabbitmq}
@@ -34,7 +34,7 @@ spring:
         size: 50                  # 增大通道缓存数
 
   redis:
-    host: ${REDIS_HOST:192.168.150.100}
+    host: ${REDIS_HOST:localhost}
     port: ${REDIS_PORT:6379}
     password: ${REDIS_PASSWORD:123456}
     lettuce:
@@ -64,3 +64,10 @@ info:
     name: foodiego
     version: 1.0.0
     description: FoodieGo - Local Food Review &amp; Flash Deal Platform
+
+foodiego:
+  security:
+    admin-user-ids: ${FOODIEGO_ADMIN_USER_IDS:}
+  seckill:
+    zone-id: ${FOODIEGO_SECKILL_ZONE_ID:Asia/Shanghai}
+  upload-dir: ${FOODIEGO_UPLOAD_DIR:./uploads}

@@ -71,7 +71,7 @@ public abstract class AbstractIntegrationTest {
                     "spring.redis.host=" + REDIS.getHost(),
                     "spring.redis.port=" + REDIS.getMappedPort(6379),
                     "spring.redis.password=123456",
-                    "spring.rabbitmq.addresses=" + RABBITMQ.getHost(),
+                    "spring.rabbitmq.host=" + RABBITMQ.getHost(),
                     "spring.rabbitmq.port=" + RABBITMQ.getMappedPort(5672),
                     "spring.rabbitmq.username=guest",
                     "spring.rabbitmq.password=guest"

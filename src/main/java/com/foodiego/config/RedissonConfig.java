@@ -5,6 +5,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 
 import javax.annotation.PreDestroy;
 
@@ -12,15 +13,18 @@ import javax.annotation.PreDestroy;
 public class RedissonConfig {
 
     private RedissonClient redissonClient;
-    static final String REDISSON_CONFIG_DEV = "redis://192.168.150.100:6379";
-    static final String REDISSON_CONFIG_PROD = "redis://redis:6379";
-    static final String REDISSON_PASSWORD = "123456";
 
     @Bean
-    public RedissonClient redissonClient(){
+    public RedissonClient redissonClient(RedisProperties properties){
         // 配置类
         Config config = new Config();
-        config.useSingleServer().setAddress(REDISSON_CONFIG_DEV).setPassword(REDISSON_PASSWORD);
+        org.redisson.config.SingleServerConfig server = config.useSingleServer()
+                .setAddress((properties.isSsl() ? "rediss://" : "redis://") +
+                        properties.getHost() + ":" + properties.getPort())
+                .setDatabase(properties.getDatabase());
+        if (properties.getPassword() != null && !properties.getPassword().isEmpty()) {
+            server.setPassword(properties.getPassword());
+        }
 
         // 创建RedissonClient对象
         redissonClient = Redisson.create(config);

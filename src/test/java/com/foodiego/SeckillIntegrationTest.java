@@ -24,6 +24,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.foodiego.utils.RedisConstants.SECKILL_STOCK_KEY;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.awaitility.Awaitility.await;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterEach;
 
 /**
  * Integration test for the seckill (flash sale) flow.
@@ -49,6 +52,9 @@ class SeckillIntegrationTest extends AbstractIntegrationTest {
 
     private Long testVoucherId;
     private Long testUserId = 1L;
+
+    @AfterEach
+    void cleanupUser() { UserHolder.removeUser(); }
 
     @BeforeEach
     void setUp() {
@@ -98,6 +104,10 @@ class SeckillIntegrationTest extends AbstractIntegrationTest {
         // Redis stock should have been decremented by 1
         String stockStr = stringRedisTemplate.opsForValue().get(SECKILL_STOCK_KEY + testVoucherId);
         assertEquals("49", stockStr, "Redis stock should be 49 after one order");
+        await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+            assertNotNull(voucherOrderService.getById((Long) result.getData()));
+            assertEquals(49, seckillVoucherService.getById(testVoucherId).getStock());
+        });
     }
 
     @Test
@@ -151,7 +161,7 @@ class SeckillIntegrationTest extends AbstractIntegrationTest {
             });
         }
 
-        latch.await();
+        assertTrue(latch.await(20, TimeUnit.SECONDS), "Concurrent requests must finish");
         executor.shutdown();
 
         assertEquals(stock, successCount.get(), "Exactly 50 orders should succeed");
@@ -160,5 +170,9 @@ class SeckillIntegrationTest extends AbstractIntegrationTest {
         // Final stock should be 0
         String stockStr = stringRedisTemplate.opsForValue().get(SECKILL_STOCK_KEY + testVoucherId);
         assertEquals("0", stockStr, "Final stock should be 0 — no overselling");
+        await().atMost(15, TimeUnit.SECONDS).untilAsserted(() -> {
+            assertEquals(stock, voucherOrderService.query().eq("voucher_id", testVoucherId).count());
+            assertEquals(0, seckillVoucherService.getById(testVoucherId).getStock());
+        });
     }
 }

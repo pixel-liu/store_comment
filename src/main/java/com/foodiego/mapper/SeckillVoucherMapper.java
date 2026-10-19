@@ -2,6 +2,8 @@ package com.foodiego.mapper;
 
 import com.foodiego.entity.SeckillVoucher;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 /**
  * <p>
@@ -12,5 +14,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
  * @since 2022-01-04
  */
 public interface SeckillVoucherMapper extends BaseMapper<SeckillVoucher> {
-
+    @Select("SELECT * FROM tb_seckill_voucher WHERE voucher_id = #{voucherId} FOR UPDATE")
+    SeckillVoucher selectForUpdate(@Param("voucherId") Long voucherId);
 }
