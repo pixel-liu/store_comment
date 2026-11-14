@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
@@ -193,7 +194,7 @@ class CacheClientTest {
         String cachedJson = JSONUtil.toJsonStr(logicalData);
 
         when(valueOperations.get("cache:key:1")).thenReturn(cachedJson);
-        when(valueOperations.setIfAbsent(eq("lock:shop:1"), eq("1"), eq(10L), eq(TimeUnit.SECONDS)))
+        when(valueOperations.setIfAbsent(eq("lock:shop:1"), anyString(), eq(10L), eq(TimeUnit.SECONDS)))
                 .thenReturn(true);
 
         Map<String, Object> freshData = testData("name", "fresh-data");
@@ -206,7 +207,7 @@ class CacheClientTest {
         // Background executor (sync) should have rebuilt the cache
         verify(valueOperations, atLeastOnce()).set(eq("cache:key:1"), anyString());
         // Lock should be released after rebuild
-        verify(stringRedisTemplate).delete("lock:shop:1");
+        verify(stringRedisTemplate).execute(any(DefaultRedisScript.class), eq(java.util.Collections.singletonList("lock:shop:1")), anyString());
     }
 
     @Test
@@ -256,7 +257,7 @@ class CacheClientTest {
 
         assertEquals("fresh-data", result.get("name"));
         verify(dbFallback, never()).apply(anyLong());
-        // Note: lock is NOT released in double-check path (original behavior)
+        verify(stringRedisTemplate).execute(any(DefaultRedisScript.class), eq(java.util.Collections.singletonList("lock:shop:1")), anyString());
     }
 
     // ────────────────────── queryWithMute() — mutex-based rebuild ──────────────────────
@@ -292,6 +293,6 @@ class CacheClientTest {
         assertNotNull(result);
         assertEquals("db-result", result.get("key"));
         verify(valueOperations).set(eq("cache:key:1"), anyString(), anyLong(), eq(TimeUnit.MINUTES));
-        verify(stringRedisTemplate).delete("lock:shop:1");
+        verify(stringRedisTemplate).execute(any(DefaultRedisScript.class), eq(java.util.Collections.singletonList("lock:shop:1")), anyString());
     }
 }

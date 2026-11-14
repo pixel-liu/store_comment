@@ -20,4 +20,6 @@ public class VoucherOrderDTO implements Serializable {
 
     @ApiModelProperty(value = "用户ID", example = "1001")
     private Long userId;
+
+    private boolean mealReservation;
 }

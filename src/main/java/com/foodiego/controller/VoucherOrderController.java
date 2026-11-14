@@ -1,5 +1,7 @@
 package com.foodiego.controller;
 
+import org.springframework.context.annotation.Profile;
+
 
 import com.alibaba.csp.sentinel.annotation.SentinelResource;
 import com.foodiego.dto.Result;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Api(tags = "秒杀订单管理")
 @RestController
+@Profile("legacy")
 @RequestMapping("/voucher-order")
 public class VoucherOrderController {
     @Autowired

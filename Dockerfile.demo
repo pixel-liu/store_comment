@@ -1,0 +1,16 @@
+FROM mysql:8.0 AS demo-db
+COPY src/main/resources/db/hmdp.sql /opt/foodiego/hmdp.sql
+COPY --chmod=644 demo/01-prepare-schema.sh demo/02-seed.sql /docker-entrypoint-initdb.d/
+
+FROM maven:3.9.12-eclipse-temurin-17 AS build
+WORKDIR /build
+COPY pom.xml ./
+COPY .mvn/ .mvn/
+COPY src/main/ src/main/
+RUN mvn --batch-mode --no-transfer-progress -Dmaven.test.skip=true package
+
+FROM eclipse-temurin:17-jre-alpine AS demo-app
+WORKDIR /app
+COPY --from=build /build/target/foodiego-*.jar /app/app.jar
+EXPOSE 8081
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

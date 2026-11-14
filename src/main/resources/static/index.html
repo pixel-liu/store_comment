@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f3f5ef">
+    <meta name="description" content="校园餐饮余量预约与到店核销平台">
+    <title>今日餐品 · 校园取餐</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/campus.css?v=11">
+    <script src="/campus-common.js?v=3" defer></script>
+    <script src="/campus.js?v=13" defer></script>
+</head>
+<body class="student">
+<a class="skip-link" href="#main">跳到内容</a>
+<header class="site-header">
+    <div class="shell header-inner">
+        <a class="brand" href="#/meals"><img src="/favicon.svg" alt="" width="34" height="34">校园取餐</a>
+        <nav class="navigation" aria-label="主导航">
+            <a href="#/meals" data-route="meals" aria-current="page">今日餐品</a>
+            <a href="#/reservations" data-route="reservations">我的预约</a>
+            <a href="#/waitlist" data-route="waitlist">我的候补</a>
+        </nav>
+        <button type="button" class="account-button" id="accountButton">登录</button>
+    </div>
+</header>
+
+<main class="shell" id="main" tabindex="-1">
+    <section data-page="meals">
+        <div class="meal-heading">
+            <div class="meal-heading-copy">
+                <div class="meal-heading-title">
+                    <h1 tabindex="-1">今日餐品</h1>
+                    <time id="mealDate" hidden></time>
+                </div>
+                <p>免费预约食堂余量餐，凭码到窗口取餐。</p>
+            </div>
+            <div class="meal-heading-photo">
+                <img src="/meals/black-pepper-chicken.jpg" alt="" width="623" height="623" decoding="async">
+            </div>
+        </div>
+        <div class="meal-dashboard">
+            <section class="meal-board" aria-labelledby="mealBoardTitle">
+                <div class="meal-board-toolbar">
+                    <h2 id="mealBoardTitle" tabindex="-1">食堂菜单</h2>
+                    <button class="secondary-button" type="button" id="refreshMeals">刷新余量</button>
+                </div>
+                <form class="meal-filters" id="mealFilters" role="search" aria-label="筛选食堂菜单" hidden>
+                    <div class="meal-search-row">
+                        <input id="mealSearch" name="q" type="search" aria-label="搜索菜名" placeholder="搜索菜名" maxlength="80">
+                        <button class="secondary-button" type="button" id="toggleMealFilters" aria-expanded="false" aria-controls="mealFilterOptions">筛选<span id="mealFilterCount" hidden></span></button>
+                    </div>
+                    <div class="meal-filter-options" id="mealFilterOptions" hidden>
+                        <label>取餐窗口<select id="mealWindow" name="windowId"><option value="">全部窗口</option></select></label>
+                        <label>预约状态<select id="mealStatus" name="status">
+                            <option value="">全部状态</option><option value="OPEN">可预约</option>
+                            <option value="SCHEDULED">即将开放</option><option value="SOLD_OUT">已约满</option>
+                        </select></label>
+                    </div>
+                    <div class="meal-filter-result" id="mealFilterResult" hidden>
+                        <p class="meal-result-count" id="mealResultCount" role="status"></p>
+                        <button class="secondary-button" type="reset">清除筛选</button>
+                    </div>
+                </form>
+                <div id="mealBatches" class="meal-list" aria-live="polite" aria-busy="true">
+                    <div class="empty-state"><p>正在加载今日餐品…</p></div>
+                </div>
+            </section>
+            <aside class="meal-sidebar" aria-label="窗口余量和取餐说明">
+                <section class="window-overview" aria-labelledby="windowOverviewTitle">
+                    <div class="window-overview-heading">
+                        <h2 id="windowOverviewTitle">窗口余量</h2>
+                        <button class="secondary-button" type="button" id="allMealWindows" hidden>全部窗口</button>
+                    </div>
+                    <dl class="meal-summary" id="mealSummary" hidden>
+                        <div><dt>可约批次</dt><dd id="openBatchCount"></dd></div>
+                        <div><dt>可约份数</dt><dd id="openPortionCount"></dd></div>
+                        <div><dt>即将开放</dt><dd id="upcomingBatchCount"></dd></div>
+                    </dl>
+                    <div id="mealWindowOverview" aria-live="polite">
+                        <p class="window-overview-message">正在查询窗口余量…</p>
+                    </div>
+                </section>
+                <section class="pickup-guide" aria-labelledby="pickupGuideTitle">
+                    <h2 id="pickupGuideTitle">如何取餐</h2>
+                    <ol>
+                        <li>选餐品，预约一份</li>
+                        <li>在「我的预约」查看取餐码</li>
+                        <li>在取餐时段到对应窗口出示取餐码</li>
+                    </ol>
+                </section>
+            </aside>
+        </div>
+    </section>
+
+    <section data-page="window" hidden>
+        <div class="window-page-top">
+            <a class="window-back" href="#/meals">← 返回今日餐品</a>
+            <button class="secondary-button" type="button" id="refreshWindow">刷新余量</button>
+        </div>
+        <div class="window-profile">
+            <div>
+                <h1 id="windowTitle" tabindex="-1">取餐窗口</h1>
+                <p id="windowAddress" hidden></p>
+            </div>
+            <dl class="window-profile-stock" id="windowStock" hidden>
+                <dt>当前可预约</dt><dd><strong id="windowPortions"></strong> 份</dd>
+            </dl>
+        </div>
+        <div id="windowNotice" aria-live="polite"></div>
+        <div id="windowSchedule" hidden>
+            <section class="meal-board" aria-labelledby="windowOpenTitle">
+                <div class="meal-board-toolbar"><h2 id="windowOpenTitle">正在开放</h2></div>
+                <div class="meal-list" id="windowOpenMeals"></div>
+            </section>
+            <section class="meal-board" aria-labelledby="windowUpcomingTitle">
+                <div class="meal-board-toolbar"><h2 id="windowUpcomingTitle">即将开放</h2></div>
+                <div class="meal-list" id="windowUpcomingMeals"></div>
+            </section>
+        </div>
+    </section>
+
+    <section data-page="reservations" hidden>
+        <div class="page-heading">
+            <h1 tabindex="-1">我的预约</h1>
+            <button class="secondary-button" type="button" id="refreshReservations" hidden>刷新状态</button>
+        </div>
+        <article id="reservationTicket" class="pickup-ticket" aria-labelledby="reservationTicketTitle" aria-live="polite" hidden></article>
+        <div id="reservationNotice" aria-live="polite"></div>
+        <section class="reservation-history" id="reservationHistory" aria-labelledby="reservationHistoryTitle" hidden>
+            <h2 id="reservationHistoryTitle">预约记录</h2>
+            <div class="reservation-filters" id="reservationFilters" role="group" aria-label="筛选预约状态">
+                <button type="button" class="secondary-button" data-reservation-status="ALL" aria-pressed="true">全部</button>
+                <button type="button" class="secondary-button" data-reservation-status="AWAITING_PICKUP" aria-pressed="false">待取餐</button>
+                <button type="button" class="secondary-button" data-reservation-status="REDEEMED" aria-pressed="false">已取餐</button>
+                <button type="button" class="secondary-button" data-reservation-status="CANCELLED" aria-pressed="false">已取消</button>
+                <button type="button" class="secondary-button" data-reservation-status="EXPIRED" aria-pressed="false">已逾期</button>
+            </div>
+            <div id="reservationHistoryNotice" aria-live="polite"></div>
+            <ul id="reservationList" class="reservation-list" hidden></ul>
+            <nav class="page-controls" id="reservationPages" aria-label="预约分页" hidden>
+                <button type="button" class="secondary-button" data-reservation-page="-1">上一页</button>
+                <span aria-live="polite"></span>
+                <button type="button" class="secondary-button" data-reservation-page="1">下一页</button>
+            </nav>
+        </section>
+    </section>
+
+    <section data-page="waitlist" hidden>
+        <div class="page-heading">
+            <div><h1 tabindex="-1">我的候补</h1><p class="waitlist-intro">有余量时按排队顺序保留一份，请在截止前确认。</p></div>
+            <button type="button" class="secondary-button" id="refreshWaitlist" hidden>刷新候补</button>
+        </div>
+        <div id="waitlistNotice" aria-live="polite"></div>
+        <div class="waitlist-list" id="waitlistEntries"></div>
+    </section>
+
+</main>
+
+
+<div class="toast" id="toast" role="status" hidden></div>
+</body>
+</html>

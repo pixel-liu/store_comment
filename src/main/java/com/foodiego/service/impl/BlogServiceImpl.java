@@ -11,6 +11,7 @@ import com.foodiego.dto.UserDTO;
 import com.foodiego.entity.Blog;
 import com.foodiego.entity.User;
 import com.foodiego.mapper.BlogMapper;
+import com.foodiego.mapper.BlogLikeMapper;
 import com.foodiego.service.IBlogService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.foodiego.service.IFollowService;
@@ -23,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
@@ -48,6 +50,8 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
     private IUserService userService;
     @Autowired
     private IFollowService followService;
+    @Resource
+    private BlogLikeMapper blogLikeMapper;
 
     @Override
     public Result queryHotBlog(Integer current) {
@@ -84,28 +88,28 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Result likeBlog(Long id) {
         // 获取登录用户
         Long userId = UserHolder.getUser().getId();
+        if (id == null || id <= 0 || getById(id) == null) {
+            return Result.fail("笔记不存在！");
+        }
 
-        // 判断用户是否已经点赞
-        Double score = stringRedisTemplate
-                .opsForZSet()
-                .score(RedisConstants.BLOG_LIKED_KEY + id, userId.toString());
-
-        // 如果没有点赞
-        if (score == null) {
-            // 点赞加一
-            boolean isSuccess = update().setSql("liked = liked + 1").eq("id", id).update();
-            if (isSuccess) {
-                // 保存用户到Redis的set集合
-                stringRedisTemplate.opsForZSet().add(RedisConstants.BLOG_LIKED_KEY + id, userId.toString(), System.currentTimeMillis());
+        // INSERT IGNORE plus a unique index makes concurrent likes deterministic.
+        boolean liked = blogLikeMapper.insertIgnore(id, userId) == 1;
+        if (liked) {
+            if (!update().setSql("liked = COALESCE(liked, 0) + 1").eq("id", id).update()) {
+                throw new IllegalStateException("点赞计数更新失败");
             }
+            stringRedisTemplate.opsForZSet().add(RedisConstants.BLOG_LIKED_KEY + id,
+                    userId.toString(), System.currentTimeMillis());
         } else {
-            // 点赞减一
-            boolean isSuccess = update().setSql("liked = liked - 1").eq("id", id).update();
-            if (isSuccess) {
-                // 删除用户从Redis的set集合
+            int removed = blogLikeMapper.delete(id, userId);
+            if (removed == 1) {
+                if (!update().setSql("liked = GREATEST(COALESCE(liked, 0) - 1, 0)").eq("id", id).update()) {
+                    throw new IllegalStateException("点赞计数更新失败");
+                }
                 stringRedisTemplate.opsForZSet().remove(RedisConstants.BLOG_LIKED_KEY + id, userId.toString());
             }
         }

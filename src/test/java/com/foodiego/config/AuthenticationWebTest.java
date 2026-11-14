@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
@@ -29,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringJUnitConfig(AuthenticationWebTest.Config.class)
 @WebAppConfiguration
+@ActiveProfiles("legacy")
 @TestPropertySource(properties = "foodiego.security.admin-user-ids=1")
 class AuthenticationWebTest {
     @Configuration
@@ -41,11 +43,12 @@ class AuthenticationWebTest {
 
     @RestController
     static class Probe {
-        @GetMapping({"/", "/shop/1", "/shop-type/list", "/voucher/list/1", "/actuator/health"})
+        @GetMapping({"/", "/shop/1", "/shop-type/list", "/voucher/list/1", "/actuator/health",
+                "/meal-batches", "/campus-windows", "/campus-windows/1"})
         String browse() { return "public"; }
         @PostMapping({"/shop", "/voucher/seckill", "/upload/blog"})
         String write() { return "written"; }
-        @PostMapping("/voucher-order/seckill/1")
+        @PostMapping({"/voucher-order/seckill/1", "/meal-batches/1/reservations"})
         String order() { return UserHolder.getUser().getId().toString(); }
         @GetMapping("/user/me")
         String me() { return UserHolder.getUser().getId().toString(); }
@@ -80,13 +83,15 @@ class AuthenticationWebTest {
     @AfterEach void cleanup() { UserHolder.removeUser(); }
 
     @Test void publicBrowsingAndHealthRemainAccessible() throws Exception {
-        for (String path : new String[]{"/", "/shop/1", "/shop-type/list", "/voucher/list/1", "/actuator/health"}) {
+        for (String path : new String[]{"/", "/shop/1", "/shop-type/list", "/voucher/list/1", "/actuator/health",
+                "/meal-batches", "/campus-windows", "/campus-windows/1"}) {
             mvc.perform(get(path)).andExpect(status().isOk());
         }
     }
 
     @Test void ordersRejectMissingAndExpiredTokens() throws Exception {
         mvc.perform(post("/voucher-order/seckill/1")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/meal-batches/1/reservations")).andExpect(status().isUnauthorized());
         mvc.perform(post("/voucher-order/seckill/1").header("Authorization", "expired"))
                 .andExpect(status().isUnauthorized());
     }

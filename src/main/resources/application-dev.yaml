@@ -1,0 +1,4 @@
+foodiego:
+  security:
+    # Local-only convenience. Never enable this in a shared or public environment.
+    expose-login-code: true

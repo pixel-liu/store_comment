@@ -1,0 +1,83 @@
+name: foodiego-demo
+
+services:
+  mysql:
+    build:
+      context: .
+      dockerfile: Dockerfile.demo
+      target: demo-db
+    environment:
+      MYSQL_ROOT_PASSWORD: demo-root-password
+      MYSQL_ROOT_HOST: localhost
+      MYSQL_DATABASE: foodiego
+      MYSQL_USER: foodiego
+      MYSQL_PASSWORD: demo-mysql-password
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_PASSWORD mysql --protocol=TCP -h 127.0.0.1 -u \"$$MYSQL_USER\" \"$$MYSQL_DATABASE\" -e 'SELECT 1 FROM tb_shop_staff LIMIT 1'"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  rabbitmq:
+    image: rabbitmq:3.9-alpine
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: foodiego
+      RABBITMQ_DEFAULT_PASS: demo-rabbitmq-password
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
+      interval: 5s
+      timeout: 8s
+      retries: 24
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.demo
+      target: demo-app
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: foodiego
+      MYSQL_PASSWORD: demo-mysql-password
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ""
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: foodiego
+      RABBITMQ_PASSWORD: demo-rabbitmq-password
+      FOODIEGO_ADMIN_USER_IDS: "9001"
+      FOODIEGO_EXPOSE_LOGIN_CODE: "true"
+    ports:
+      - "127.0.0.1:${FOODIEGO_DEMO_PORT:-8081}:8081"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8081/actuator/health"]
+      start_period: 45s
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  mysql-data:
+  redis-data:
+  rabbitmq-data:

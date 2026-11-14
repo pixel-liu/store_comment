@@ -5,6 +5,11 @@ target/maven-status/
 target/test-classes/
 target/surefire-reports/
 target/*.jar.original
+.local-services/
+uploads/
+tokens.txt
+.env
+.env.*
 
 # IDE
 .idea/

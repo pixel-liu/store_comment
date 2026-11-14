@@ -1,5 +1,5 @@
-# 使用 Eclipse Temurin JDK 8（替代已废弃的 openjdk）
-FROM eclipse-temurin:8-jdk-alpine
+# 使用 Eclipse Temurin JDK 17，与本地构建环境一致
+FROM eclipse-temurin:17-jdk-alpine
 
 # 安装 curl 供健康检查使用
 RUN apk add --no-cache curl

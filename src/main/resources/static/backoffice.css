@@ -1,0 +1,130 @@
+.backoffice .site-header { background: var(--hero); border: 0; }
+.backoffice .brand, .student-link { color: var(--paper); }
+.student-link { min-height: 44px; display: inline-flex; align-items: center; text-underline-offset: 0.25em; }
+.backoffice .account-button { color: var(--paper); background: transparent; border-color: #91ad92; }
+.backoffice .account-button:hover { background: var(--pine); }
+.backoffice-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.35rem 1.2rem;
+    padding: clamp(1.5rem, 4vw, 2.9rem) 0 1.35rem;
+    margin-bottom: 1.35rem;
+    border-bottom: 1px solid var(--line);
+}
+.backoffice-heading h1 { color: var(--hero); font-size: clamp(1.85rem, 5vw, 2.65rem); }
+#backofficeRole { padding: 0.4rem 0.8rem; color: var(--hero); background: var(--tint); border-radius: 6px; font-size: 0.88rem; }
+#accessNotice:not(:empty) { max-width: 42rem; margin: clamp(1.5rem, 5vw, 3.5rem) auto; }
+.backoffice-workspace { display: grid; grid-template-columns: 11.5rem minmax(0, 1fr); align-items: start; gap: clamp(1rem, 2vw, 1.8rem); }
+.backoffice-navigation { flex-direction: column; align-items: stretch; padding: 0.45rem; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.backoffice-navigation a[aria-current="page"] { box-shadow: inset 3px 0 var(--pine); }
+.backoffice .page-heading { align-items: center; padding: 0 0 1rem; }
+.backoffice .page-heading h2 { color: var(--pine); font-size: clamp(1.4rem, 2.5vw, 1.8rem); }
+.operations-nav { padding-bottom: 0.75rem; border-bottom: 1px solid var(--line); }
+.staff-workspace { display: grid; grid-template-columns: minmax(17rem, 0.9fr) minmax(0, 1.15fr); align-items: start; gap: 1rem; }
+.staff-actions { display: grid; min-width: 0; gap: 0.85rem; }
+.staff-progress { min-width: 0; padding: clamp(0.85rem, 2vw, 1.2rem); border: 1px solid var(--line); border-radius: 13px; background: var(--paper); }
+.staff-progress .progress-row { background: var(--canvas); }
+#redeemMeal { background: var(--tint); border-color: #bdcdbb; border-top: 3px solid var(--pine); }
+#redeemMeal .form-row { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+.publish-panel .form-row:has(input[type="datetime-local"]) { grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.75rem), 1fr)); }
+.operations-report { padding: clamp(0.9rem, 3vw, 1.5rem); border: 1px solid var(--line); border-radius: 14px; background: var(--paper); }
+.report-toolbar, .report-dates, .batch-detail-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 0.65rem; }
+.report-toolbar { justify-content: space-between; margin-bottom: 1.15rem; }
+.report-dates { align-items: end; }
+.report-dates label { display: grid; gap: 0.2rem; font-size: 0.85rem; }
+.operation-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+    margin: 0.8rem 0;
+    gap: 1px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--line);
+}
+.operation-metrics > div { padding: 0.75rem; background: #e9efe3; }
+.operation-metrics dt, .report-note, .batch-dates, .redemption-list span { color: var(--muted); font-size: 0.86rem; }
+.operation-metrics dd { margin: 0.1rem 0 0; color: var(--hero); font-size: 1.42rem; font-weight: 700; }
+.report-table { overflow-x: auto; margin-top: 0.7rem; }
+.report-table table { width: 100%; border-collapse: collapse; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.report-table th, .report-table td { padding: 0.65rem; border-bottom: 1px solid var(--line); text-align: right; }
+.report-table th:first-child { text-align: left; }
+.report-table thead th { background: var(--hero); color: var(--paper); }
+.report-table tbody th { font-weight: 500; }
+.detail-link { margin-top: 0.55rem; }
+#batchDialog {
+    width: min(45rem, calc(100% - 1.5rem));
+    max-height: 90dvh;
+    overflow: auto;
+    padding: clamp(1rem, 3vw, 1.5rem);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    color: var(--pine);
+    background: var(--paper);
+}
+#batchDialog::backdrop { background: rgb(14 33 24 / 55%); }
+.batch-detail-heading { margin: 0.8rem 0 0.45rem; }
+.batch-detail-heading h3 { overflow-wrap: anywhere; }
+.batch-dates p { margin: 0.2rem 0; }
+.close-booking { color: #86382a; }
+.redemption-log { border-top: 1px solid var(--line); margin-top: 0.8rem; padding-top: 0.8rem; }
+.redemption-list { padding: 0; list-style: none; margin: 0.55rem 0 0; }
+.redemption-list li { display: flex; flex-wrap: wrap; gap: 0.3rem 1rem; padding-block: 0.55rem; border-bottom: 1px solid var(--line); }
+.redemption-list strong { overflow-wrap: anywhere; }
+.window-management {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 1.25rem;
+}
+.management-panel {
+    padding: 1.15rem;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 11px;
+}
+.management-panel > h3 { margin-bottom: 0.75rem; }
+.management-form { display: grid; gap: 0.8rem; }
+.management-form > h3 { margin-bottom: 0; }
+.window-address { margin: 0.45rem 0 0.8rem; color: var(--muted); overflow-wrap: anywhere; }
+.window-staff-list { margin: 0 0 1rem; padding: 0; list-style: none; }
+.window-staff-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-block: 0.55rem;
+    border-bottom: 1px solid var(--line);
+}
+.window-staff-list li:first-child { border-top: 1px solid var(--line); }
+.window-staff-list li span { overflow-wrap: anywhere; }
+.window-staff-list li small { display: block; color: var(--muted); }
+.window-staff-list button { flex: none; }
+#staffList > .empty-state { margin-bottom: 1rem; }
+
+@media (max-width: 1050px) {
+    .backoffice-workspace { grid-template-columns: minmax(0, 1fr); }
+    .backoffice-navigation { flex-direction: row; flex-wrap: wrap; }
+}
+
+@media (max-width: 740px) {
+    .staff-workspace { grid-template-columns: minmax(0, 1fr); }
+    .window-management { grid-template-columns: 1fr; }
+}
+@media (max-width: 540px) {
+    .backoffice .header-inner { padding-block: 0.5rem; gap: 0.25rem 0.7rem; }
+    .backoffice .brand { font-size: 1rem; gap: 0.4rem; }
+    .student-link { font-size: 0.85rem; }
+    .backoffice .account-button { max-width: 32vw; padding-inline: 0.55rem; }
+    .backoffice .window-select { flex-wrap: wrap; }
+    .backoffice .window-select select { max-width: 100%; }
+    .report-dates { width: 100%; }
+    .report-dates label { flex: 1 1 8rem; min-width: 0; }
+    .report-dates input { width: 100%; min-width: 0; }
+    .operations-report .operation-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 350px) {
+    #redeemMeal .form-row { grid-template-columns: minmax(0, 1fr); }
+}

@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DuplicateKeyException;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -40,19 +42,32 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
     private IUserService userService;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public Result follow(Long followUserId, Boolean isFollow) {
         // 1.获取当前用户
         Long userId = UserHolder.getUser().getId();
+        if (followUserId == null || followUserId <= 0 || followUserId.equals(userId)) {
+            return Result.fail("关注用户无效");
+        }
 
         // 2.判断是否关注
-        if (isFollow) {
+        if (isFollow == null) {
+            return Result.fail("关注状态无效");
+        }
+        if (Boolean.TRUE.equals(isFollow)) {
             // 3.关注，新增数据
             Follow follow = new Follow();
             follow.setUserId(userId);
             follow.setFollowUserId(followUserId);
 
-            boolean isSave = save(follow);
-            if (isSave) {
+            try {
+                boolean isSave = save(follow);
+                if (isSave) {
+                    // 写入Redis缓存
+                    stringRedisTemplate.opsForSet().add(RedisConstants.FOLLOW_KEY + userId, followUserId.toString());
+                }
+            } catch (DuplicateKeyException ignored) {
+                // Idempotent follow: the unique index is the authoritative concurrency guard.
                 // 写入Redis缓存
                 stringRedisTemplate.opsForSet().add(RedisConstants.FOLLOW_KEY + userId, followUserId.toString());
             }

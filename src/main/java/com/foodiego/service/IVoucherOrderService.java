@@ -24,6 +24,14 @@ public interface IVoucherOrderService extends IService<VoucherOrder> {
      */
     Result secKillVoucher(Long voucherId);
 
+    default Result reserveMeal(Long batchId) {
+        throw new UnsupportedOperationException("Meal reservations are not supported by this implementation");
+    }
+
+    default Result confirmWaitlist(Long batchId, String attempt) {
+        throw new UnsupportedOperationException("Meal waitlist confirmation is not supported by this implementation");
+    }
+
     void handleVoucherOrder(VoucherOrder voucherOrder);
 
     void handleVoucherOrder(VoucherOrderDTO voucherOrderDTO);

@@ -1,5 +1,7 @@
 package com.foodiego.controller;
 
+import org.springframework.context.annotation.Profile;
+
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.foodiego.dto.Result;
@@ -24,6 +26,7 @@ import java.util.List;
  * @since 2021-12-22
  */
 @RestController
+@Profile("legacy")
 @RequestMapping("/blog")
 public class BlogController {
 

@@ -1,5 +1,7 @@
 package com.foodiego.controller;
 
+import org.springframework.context.annotation.Profile;
+
 
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.csp.sentinel.annotation.SentinelResource;
@@ -28,6 +30,7 @@ import javax.annotation.Resource;
 @Api(tags = "商铺管理")
 @Slf4j
 @RestController
+@Profile("legacy")
 @RequestMapping("/shop")
 public class ShopController {
 

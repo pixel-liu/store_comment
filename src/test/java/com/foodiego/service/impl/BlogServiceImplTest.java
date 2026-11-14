@@ -5,6 +5,7 @@ import com.foodiego.dto.UserDTO;
 import com.foodiego.entity.Blog;
 import com.foodiego.entity.User;
 import com.foodiego.mapper.BlogMapper;
+import com.foodiego.mapper.BlogLikeMapper;
 import com.foodiego.service.IFollowService;
 import com.foodiego.service.IUserService;
 import com.foodiego.utils.UserHolder;
@@ -50,6 +51,9 @@ class BlogServiceImplTest {
 
     @MockBean
     private BlogMapper blogMapper;
+
+    @MockBean
+    private BlogLikeMapper blogLikeMapper;
 
     private ZSetOperations<String, String> zSetOps;
 

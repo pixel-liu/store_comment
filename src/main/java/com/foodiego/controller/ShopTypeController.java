@@ -1,5 +1,7 @@
 package com.foodiego.controller;
 
+import org.springframework.context.annotation.Profile;
+
 
 import com.foodiego.dto.Result;
 import com.foodiego.entity.ShopType;
@@ -23,6 +25,7 @@ import java.util.List;
  */
 @Api(tags = "商铺类型管理")
 @RestController
+@Profile("legacy")
 @RequestMapping("/shop-type")
 public class ShopTypeController {
     @Resource

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.foodiego.dto.VoucherOrderDTO;
 import com.foodiego.mapper.VoucherOrderMapper;
 import com.foodiego.service.IVoucherOrderService;
+import com.foodiego.service.IVoucherService;
 import com.foodiego.utils.RedisIdWorker;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,6 +56,7 @@ class OrderTransactionTest {
         @Bean StringRedisTemplate stringRedisTemplate() { return mock(StringRedisTemplate.class); }
         @Bean RabbitTemplate rabbitTemplate() { return mock(RabbitTemplate.class); }
         @Bean RedisIdWorker redisIdWorker() { return mock(RedisIdWorker.class); }
+        @Bean IVoucherService voucherService() { return mock(IVoucherService.class); }
     }
 
     @Autowired IVoucherOrderService service;

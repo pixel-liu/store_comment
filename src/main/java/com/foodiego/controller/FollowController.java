@@ -1,5 +1,7 @@
 package com.foodiego.controller;
 
+import org.springframework.context.annotation.Profile;
+
 
 import com.foodiego.dto.Result;
 import com.foodiego.service.IFollowService;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
  * @since 2021-12-22
  */
 @RestController
+@Profile("legacy")
 @RequestMapping("/follow")
 public class FollowController {
 

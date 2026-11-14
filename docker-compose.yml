@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # ============ MySQL ============
   mysql:
-    image: mysql:5.7
+    image: mysql:8.0
     container_name: foodiego-mysql
     restart: always
     environment:

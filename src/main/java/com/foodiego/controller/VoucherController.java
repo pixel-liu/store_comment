@@ -1,7 +1,10 @@
 package com.foodiego.controller;
 
+import org.springframework.context.annotation.Profile;
+
 
 import com.foodiego.dto.Result;
+import com.foodiego.entity.MealBatch;
 import com.foodiego.entity.Voucher;
 import com.foodiego.service.IVoucherService;
 import io.swagger.annotations.Api;
@@ -21,6 +24,7 @@ import javax.annotation.Resource;
  */
 @Api(tags = "优惠券管理")
 @RestController
+@Profile("legacy")
 @RequestMapping("/voucher")
 public class VoucherController {
 
@@ -35,6 +39,9 @@ public class VoucherController {
     @ApiOperation("新增普通优惠券")
     @PostMapping
     public Result addVoucher(@ApiParam(value = "优惠券信息", required = true) @RequestBody Voucher voucher) {
+        if (Integer.valueOf(MealBatch.VOUCHER_TYPE).equals(voucher.getType())) {
+            return Result.fail("请从店员工作台发布余量餐");
+        }
         voucherService.save(voucher);
         return Result.ok(voucher.getId());
     }
@@ -47,6 +54,9 @@ public class VoucherController {
     @ApiOperation("新增秒杀券 - 同时写入普通券和秒杀券表")
     @PostMapping("seckill")
     public Result addSeckillVoucher(@ApiParam(value = "秒杀券信息（含秒杀时间、库存）", required = true) @RequestBody Voucher voucher) {
+        if (Integer.valueOf(MealBatch.VOUCHER_TYPE).equals(voucher.getType())) {
+            return Result.fail("请从店员工作台发布余量餐");
+        }
         voucherService.addSeckillVoucher(voucher);
         return Result.ok(voucher.getId());
     }

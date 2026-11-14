@@ -9,6 +9,13 @@ if redis.call('srem', KEYS[2], ARGV[1]) == 1 then
         redis.call('incr', KEYS[1])
     end
 end
+if KEYS[5] then
+    local record = redis.call('hget', KEYS[5], ARGV[1])
+    local attempt, order = string.match(record or '', '^(%d+):CONFIRMED:(%d+)$')
+    if order and order == string.match(ARGV[2], '^(%d+):') then
+        redis.call('hset', KEYS[5], ARGV[1], attempt .. ':FAILED:' .. order)
+    end
+end
 redis.call('set', KEYS[3], '1')
 redis.call('lpush', KEYS[4], ARGV[2])
 return 1

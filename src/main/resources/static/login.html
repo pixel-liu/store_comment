@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f3f5ef">
+    <title>登录 · 校园取餐</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/campus.css?v=9">
+    <link rel="stylesheet" href="/login.css?v=2">
+    <script src="/campus-common.js?v=2" defer></script>
+    <script src="/login.js?v=3" defer></script>
+</head>
+<body>
+<header class="site-header">
+    <div class="shell header-inner login-header">
+        <a class="brand" href="/"><img src="/favicon.svg" alt="" width="34" height="34">校园取餐</a>
+        <a id="returnLink" href="/">返回学生端</a>
+    </div>
+</header>
+<main class="shell login-layout">
+    <div class="login-visual" aria-hidden="true"></div>
+    <form class="login-form" id="loginForm" method="post" aria-labelledby="loginHeading">
+        <div class="login-intro">
+            <h1 id="loginHeading">登录校园取餐</h1>
+            <p id="portalDescription">查看今日余量餐，预约后凭取餐码到窗口取餐。</p>
+        </div>
+        <fieldset class="portal-choice">
+            <legend>选择登录身份</legend>
+            <div class="portal-options">
+                <label>
+                    <input type="radio" name="portal" value="student" checked>
+                    <span>学生登录</span>
+                </label>
+                <label>
+                    <input type="radio" name="portal" value="backoffice">
+                    <span>商家 / 管理员登录</span>
+                </label>
+            </div>
+        </fieldset>
+        <label for="phoneInput">手机号
+            <input id="phoneInput" name="phone" type="tel" inputmode="numeric" pattern="1[3-9][0-9]{9}"
+                   maxlength="11" autocomplete="tel" required>
+        </label>
+        <label for="codeInput">验证码</label>
+        <div class="code-row">
+            <input id="codeInput" name="code" type="text" inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
+                   autocomplete="one-time-code" spellcheck="false" required>
+            <button class="secondary-button" id="sendCodeButton" type="button">获取验证码</button>
+        </div>
+        <p class="feedback" id="codeHint" role="status"></p>
+        <p class="feedback error" id="loginError" role="alert"></p>
+        <button type="submit" id="loginButton">登录学生端</button>
+    </form>
+</main>
+</body>
+</html>

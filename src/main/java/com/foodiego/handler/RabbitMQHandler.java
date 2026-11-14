@@ -2,6 +2,7 @@ package com.foodiego.handler;
 
 import com.foodiego.dto.VoucherOrderDTO;
 import com.foodiego.service.IVoucherOrderService;
+import com.foodiego.utils.RedisConstants;
 import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +17,8 @@ import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.backoff.ExponentialBackOffPolicy;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.foodiego.config.RabbitMQConfig.SECKILL_DLX_QUEUE;
 import static com.foodiego.config.RabbitMQConfig.SECKILL_ORDER_QUEUE;
@@ -83,9 +85,10 @@ public class RabbitMQHandler {
         try {
             orderRetry.execute(context -> {
                 if (voucherOrderService.markOrderFailed(voucherOrderDTO)) {
-                    Long compensated = stringRedisTemplate.execute(COMPENSATE_SCRIPT,
-                            Arrays.asList("seckill:stock:" + voucherId, "seckill:order:" + voucherId,
-                                    "seckill:compensated:" + orderId, "seckill:dead:orders"),
+                    List<String> keys = new ArrayList<>(List.of("seckill:stock:" + voucherId, "seckill:order:" + voucherId,
+                            "seckill:compensated:" + orderId, "seckill:dead:orders"));
+                    if (voucherOrderDTO.isMealReservation()) keys.add(RedisConstants.waitlistRecordKey(voucherId));
+                    Long compensated = stringRedisTemplate.execute(COMPENSATE_SCRIPT, keys,
                             String.valueOf(userId), orderId + ":" + voucherId + ":" + userId);
                     if (compensated == null) {
                         throw new IllegalStateException("Redis compensation returned no result");

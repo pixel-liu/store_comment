@@ -6,8 +6,11 @@ import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
 import com.alibaba.csp.sentinel.slots.block.flow.FlowRuleManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 
 import javax.annotation.PostConstruct;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,6 +19,9 @@ import java.util.List;
  */
 @Configuration
 public class SentinelConfig {
+
+    @Value("${foodiego.sentinel-log-dir:./logs/sentinel}")
+    private String sentinelLogDir;
 
     /**
      * 开启 @SentinelResource 注解支持
@@ -30,6 +36,17 @@ public class SentinelConfig {
      */
     @PostConstruct
     public void initFlowRules() {
+        // Sentinel defaults to C:\\logs\\csp on Windows, which is not writable for
+        // ordinary users. Configure its log directory before the manager class loads.
+        if (System.getProperty("csp.sentinel.log.dir") == null) {
+            try {
+                Path logDir = Path.of(sentinelLogDir).toAbsolutePath().normalize();
+                Files.createDirectories(logDir);
+                System.setProperty("csp.sentinel.log.dir", logDir.toString());
+            } catch (Exception e) {
+                throw new IllegalStateException("无法创建 Sentinel 日志目录", e);
+            }
+        }
         List<FlowRule> rules = new ArrayList<>();
 
         // 查询店铺接口 — 单机 QPS 上限 50

@@ -111,7 +111,7 @@ public class RabbitMQConfig {
 
     /**
      * 注册 Publisher Confirm 回调
-     * 感知消息是否到达 broker，失败时记录日志（业务补偿由 Redis 备份队列兜底）
+     * 感知消息是否到达 broker；未确认的记录保留在 Redis outbox 中等待重试。
      */
     @Bean
     public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {

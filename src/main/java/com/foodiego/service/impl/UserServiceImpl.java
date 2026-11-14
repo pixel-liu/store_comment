@@ -8,13 +8,17 @@ import com.foodiego.dto.LoginFormDTO;
 import com.foodiego.dto.Result;
 import com.foodiego.dto.UserDTO;
 import com.foodiego.entity.User;
+import com.foodiego.mapper.MealMapper;
 import com.foodiego.mapper.UserMapper;
 import com.foodiego.service.IUserService;
+import com.foodiego.utils.AdministratorAccess;
 import com.foodiego.utils.RedisConstants;
 import com.foodiego.utils.RegexUtils;
 import com.foodiego.utils.UserHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.cache.CacheProperties;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.connection.BitFieldSubCommands;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -46,6 +50,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    private AdministratorAccess administrators;
+
+    @Resource
+    private MealMapper meals;
+
+    /** Only enabled explicitly for local development; production must use an SMS provider. */
+    @Value("${foodiego.security.expose-login-code:false}")
+    private boolean exposeLoginCode;
     /**
      * 发送手机验证码
      */
@@ -55,6 +69,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         if (RegexUtils.isPhoneInvalid(phone)) {
             return Result.fail("手机号格式错误！");
         }
+        Boolean allowed = stringRedisTemplate.opsForValue().setIfAbsent(
+                RedisConstants.LOGIN_CODE_SEND_LIMIT_KEY + phone,
+                "1",
+                RedisConstants.LOGIN_CODE_SEND_LIMIT_TTL,
+                TimeUnit.SECONDS);
+        if (!Boolean.TRUE.equals(allowed)) {
+            return Result.fail("请求过于频繁，请稍后再试");
+        }
+
         // 生成验证码
         String code = RandomUtil.randomNumbers(6);
 
@@ -62,11 +85,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         stringRedisTemplate.opsForValue().set(RedisConstants.LOGIN_CODE_KEY + phone, code);
         stringRedisTemplate.expire(RedisConstants.LOGIN_CODE_KEY + phone, RedisConstants.LOGIN_CODE_TTL, TimeUnit.MINUTES);
 
-        // 发送验证码
-        log.info("验证码为：" + code);
-
-        // 返回结果
-        return Result.ok(code);
+        // 生产环境在此调用短信服务；验证码绝不能进入日志或 HTTP 响应。
+        if (exposeLoginCode) {
+            log.debug("本地开发验证码已生成，phone={}", phone);
+            return Result.ok(code);
+        }
+        return Result.ok();
 
     }
 
@@ -81,25 +105,46 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             return Result.fail("手机号格式错误！");
         }
 
-        // 校验验证码
-        String cacheCode = stringRedisTemplate.opsForValue().get(RedisConstants.LOGIN_CODE_KEY + loginForm.getPhone());
+        String portal = loginForm.getPortal();
+        boolean studentPortal = "student".equals(portal);
+        boolean backofficePortal = "backoffice".equals(portal);
+        if (portal != null && !studentPortal && !backofficePortal) {
+            return Result.fail("请选择学生登录或商家／管理员登录");
+        }
+
+        String phone = loginForm.getPhone();
+        String codeKey = RedisConstants.LOGIN_CODE_KEY + phone;
+        String cacheCode = stringRedisTemplate.opsForValue().get(codeKey);
         String code = loginForm.getCode();
         if (cacheCode == null || !cacheCode.equals(code)) {
             return Result.fail("验证码错误！");
         }
 
-        // 根据手机号查询用户
-        User user = query().eq("phone", loginForm.getPhone()).one();
-
-        // 用户不存在，创建新用户
-        if (user == null) {
-             user = createNewUser(loginForm.getPhone());
-             save(user);
+        User user = baseMapper.findLoginUserByPhone(phone);
+        if (backofficePortal && !hasBackofficeAccess(user)) {
+            return Result.fail("此账号没有后台权限。学生请切换到学生登录，窗口人员请联系管理员绑定窗口。");
         }
-
-        // 拷贝用户信息到UserDTO
-//        UserDTO userDTO = new UserDTO();
-//        BeanUtil.copyProperties(user,userDTO);
+        if (studentPortal && hasBackofficeAccess(user)) {
+            return Result.fail("此账号有运营权限，请切换到「商家 / 管理员登录」。");
+        }
+        // Keep the code usable after a portal mismatch, and issue a token only once.
+        if (!Boolean.TRUE.equals(stringRedisTemplate.delete(codeKey))) {
+            return Result.fail("验证码错误！");
+        }
+        if (user == null) {
+            try {
+                user = createNewUser(phone);
+            } catch (DuplicateKeyException ignored) {
+                // A concurrent login may create the same phone first; read the winner.
+                user = baseMapper.findLoginUserByPhone(phone);
+                if (user == null) {
+                    throw ignored;
+                }
+                if (studentPortal && hasBackofficeAccess(user)) {
+                    return Result.fail("此账号有运营权限，请切换到「商家 / 管理员登录」。");
+                }
+            }
+        }
 
         // 保存UserDTO信息到redis中
         // 随机生成token令牌 UUID
@@ -109,10 +154,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         UserDTO userDTO = BeanUtil.copyProperties(user, UserDTO.class);
         Map<String, Object> userMap = BeanUtil.beanToMap(userDTO);
         // 将map中的value转成string
-        Map<String, String> stringUserMap = userMap.entrySet().stream().collect(Collectors.toMap(
-                Map.Entry::getKey,
-                entry -> entry.getValue() != null ? entry.getValue().toString() : null
-        ));
+        Map<String, String> stringUserMap = userMap.entrySet().stream()
+                .filter(entry -> entry.getValue() != null)
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().toString()));
 
 
         // 存储到Redis中
@@ -124,6 +168,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
 
         // 返回结果
         return Result.ok(token);
+    }
+
+    private boolean hasBackofficeAccess(User user) {
+        return user != null && (administrators.allows(user.getId()) || !meals.listStaffShops(user.getId()).isEmpty());
     }
 
     @Override

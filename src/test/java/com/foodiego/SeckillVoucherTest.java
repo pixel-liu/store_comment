@@ -10,6 +10,7 @@ import com.foodiego.service.IUserService;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Disabled;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -30,6 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 @SpringBootTest
+@Disabled("Legacy manual verification test; covered by unit and integration tests.")
 @AutoConfigureMockMvc
 class
 SeckillVoucherTest {

@@ -1,5 +1,7 @@
 package com.foodiego.controller;
 
+import org.springframework.context.annotation.Profile;
+
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import com.foodiego.dto.Result;
@@ -18,6 +20,7 @@ import java.util.Arrays;
 
 @Slf4j
 @RestController
+@Profile("legacy")
 @RequestMapping("upload")
 public class UploadController {
     private final Path uploadRoot;

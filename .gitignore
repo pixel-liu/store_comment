@@ -34,4 +34,8 @@ build/
 
 ### Sensitive ###
 tokens.txt
+.env
+.env.*
 uploads/
+.local-services/
+logs/

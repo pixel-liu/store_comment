@@ -1,0 +1,55 @@
+.login-header { justify-content: space-between; gap: 0.75rem; padding-block: 0.5rem; }
+#returnLink { min-height: 44px; display: inline-flex; align-items: center; color: var(--pine); text-underline-offset: 0.25em; }
+.login-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.03fr);
+    width: min(1000px, calc(100% - 64px));
+    margin-block: clamp(1.5rem, 5vw, 4.5rem) 2rem;
+    padding-bottom: 0;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 22px 22px 22px 6px;
+    background: var(--paper);
+}
+.login-visual {
+    min-height: 31rem;
+    background: var(--wheat) url('/meals/tomato-beef.jpg') center / cover no-repeat;
+}
+.login-intro { margin-bottom: 0.55rem; }
+.login-intro h1 { color: var(--hero); font-size: clamp(1.8rem, 3.9vw, 2.65rem); line-height: 1.16; }
+.login-intro p { margin-top: 0.65rem; color: var(--muted); line-height: 1.65; }
+.login-form { display: grid; align-content: center; gap: 0.9rem; padding: clamp(1.25rem, 4.5vw, 3.4rem); }
+.portal-choice { border: 0; padding: 0; margin-bottom: 0.25rem; }
+.portal-choice legend { padding: 0; margin-bottom: 0.5rem; }
+.portal-options { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 0.3rem; padding: 0.24rem; border-radius: 10px; background: var(--canvas); }
+.portal-options label { position: relative; display: block; cursor: pointer; }
+.portal-options input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-height: 0;
+    padding: 0;
+    opacity: 0;
+}
+.portal-options span {
+    display: grid;
+    place-items: center;
+    min-height: 46px;
+    padding: 0.35rem;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    text-align: center;
+}
+.portal-options input:checked + span { border-color: #a4bca5; background: var(--tint); color: var(--pine); font-weight: 700; }
+.portal-options input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: 2px; }
+.portal-options input:disabled + span { cursor: wait; }
+.code-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.5rem; margin-top: -0.5rem; }
+#codeHint:not(:empty) { width: fit-content; padding: 0.25rem 0.55rem; border-radius: 5px; background: var(--wheat); }
+#codeHint.error:not(:empty) { padding: 0; background: transparent; }
+.login-form button[type="submit"] { min-height: 48px; margin-top: 0.35rem; }
+
+@media (max-width: 680px) {
+    .login-layout { grid-template-columns: 1fr; width: calc(100% - 32px); }
+    .login-visual { min-height: 0; height: clamp(7rem, 28vw, 12rem); background-position: center 45%; }
+    .login-intro p { margin-top: 0.45rem; }
+}

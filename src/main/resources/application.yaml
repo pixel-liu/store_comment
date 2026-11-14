@@ -6,10 +6,15 @@ server:
       min-spare: 50
     accept-count: 800 # TCP accept 队列深度
 spring:
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          no-store: true
   application:
     name: foodiego
   datasource:
-    driver-class-name: com.mysql.jdbc.Driver
+    driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/foodiego?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: ${MYSQL_USER:root}
     password: ${MYSQL_PASSWORD:123456}
@@ -47,6 +52,10 @@ spring:
       shutdown-timeout: 100ms
   jackson:
     default-property-inclusion: non_null # JSON处理时忽略非空字段
+  mvc:
+    # Springfox 3.x still uses AntPathMatcher under Spring Boot 2.7.
+    pathmatch:
+      matching-strategy: ant_path_matcher
 mybatis-plus:
   type-aliases-package: com.foodiego.entity # alias scanning package
 logging:
@@ -66,8 +75,11 @@ info:
     description: FoodieGo - Local Food Review &amp; Flash Deal Platform
 
 foodiego:
+  sentinel-log-dir: ${FOODIEGO_SENTINEL_LOG_DIR:./logs/sentinel}
   security:
     admin-user-ids: ${FOODIEGO_ADMIN_USER_IDS:}
+    expose-login-code: ${FOODIEGO_EXPOSE_LOGIN_CODE:false}
   seckill:
     zone-id: ${FOODIEGO_SECKILL_ZONE_ID:Asia/Shanghai}
+    outbox-poll-ms: ${FOODIEGO_OUTBOX_POLL_MS:1000}
   upload-dir: ${FOODIEGO_UPLOAD_DIR:./uploads}

@@ -8,6 +8,7 @@ import com.foodiego.utils.RedisConstants;
 import com.foodiego.utils.RedisIdWorker;
 import io.lettuce.core.RedisClient;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Disabled;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.geo.Point;
@@ -27,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @SpringBootTest
+@Disabled("Manual local data-loading utilities; run explicitly with local services when needed.")
 class FoodieGoApplicationTests {
 
     @Resource

@@ -1,16 +1,10 @@
 package com.foodiego.controller;
 
 
-import cn.hutool.core.bean.BeanUtil;
 import com.foodiego.dto.LoginFormDTO;
 import com.foodiego.dto.Result;
-import com.foodiego.dto.UserDTO;
-import com.foodiego.entity.User;
-import com.foodiego.entity.UserInfo;
-import com.foodiego.service.IUserInfoService;
 import com.foodiego.service.IUserService;
 import com.foodiego.utils.UserHolder;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -25,16 +19,12 @@ import javax.servlet.http.HttpSession;
  * @author FoodieGo Team
  * @since 2021-12-22
  */
-@Slf4j
 @RestController
 @RequestMapping("/user")
 public class UserController {
 
     @Resource
     private IUserService userService;
-
-    @Resource
-    private IUserInfoService userInfoService;
 
     /**
      * 发送手机验证码
@@ -66,45 +56,7 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public Result me(){
-        // 获取当前登录的用户并返回
-        UserDTO user = UserHolder.getUser();
-        return Result.ok(user);
-    }
-
-    @GetMapping("/info/{id}")
-    public Result info(@PathVariable("id") Long userId){
-        // 查询详情
-        UserInfo info = userInfoService.getById(userId);
-        if (info == null) {
-            // 没有详情，应该是第一次查看详情
-            return Result.ok();
-        }
-        info.setCreateTime(null);
-        info.setUpdateTime(null);
-        // 返回
-        return Result.ok(info);
-    }
-
-    @GetMapping("/{id}")
-    public Result queryUserById(@PathVariable("id") Long userId){
-        // 查询详情
-        User user = userService.getById(userId);
-        if (user == null) {
-            return Result.ok();
-        }
-        UserDTO userDTO = BeanUtil.copyProperties(user, UserDTO.class);
-        // 返回
-        return Result.ok(userDTO);
-    }
-
-    @PutMapping("/sign")
-    public Result sign(){
-        return userService.sign();
-    }
-
-    @GetMapping("/sign")
-    public Result signCount(){
-        return userService.signCount();
+    public Result me() {
+        return Result.ok(UserHolder.getUser());
     }
 }

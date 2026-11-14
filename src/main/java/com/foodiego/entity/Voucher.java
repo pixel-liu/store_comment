@@ -75,9 +75,9 @@ public class Voucher implements Serializable {
     private Long actualValue;
 
     /**
-     * 优惠券类型 0：普通券；1：秒杀券
+     * 优惠券类型 0：普通券；1：秒杀券；2：余量餐批次
      */
-    @ApiModelProperty(value = "优惠券类型（0：普通券，1：秒杀券）", example = "1")
+    @ApiModelProperty(value = "优惠券类型（0：普通券，1：秒杀券，2：余量餐批次）", example = "1")
     private Integer type;
 
     /**

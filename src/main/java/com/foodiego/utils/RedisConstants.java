@@ -3,6 +3,8 @@ package com.foodiego.utils;
 public class RedisConstants {
     public static final String LOGIN_CODE_KEY = "login:code:";
     public static final Long LOGIN_CODE_TTL = 2L;
+    public static final String LOGIN_CODE_SEND_LIMIT_KEY = "login:code:send:";
+    public static final Long LOGIN_CODE_SEND_LIMIT_TTL = 60L;
     public static final String LOGIN_USER_KEY = "login:token:";
     public static final Long LOGIN_USER_TTL = 30L;
 
@@ -19,6 +21,11 @@ public class RedisConstants {
 
     public static final String SECKILL_STOCK_KEY = "seckill:stock:";
     public static final String SECKILL_INFO_KEY = "seckill:info:";   // Hash: begin_time, end_time
+    public static final String MEAL_RECEIPT_KEY = "meal:receipt:";
+    public static final String MEAL_RESTOCKED_KEY = "meal:restocked:";
+    public static String waitlistRecordKey(long batch) {
+        return "meal:waitlist:records:" + batch;
+    }
     public static final String BLOG_LIKED_KEY = "blog:liked:";
 
     public static final String FOLLOW_KEY = "follows:";
@@ -26,5 +33,7 @@ public class RedisConstants {
     public static final String SHOP_GEO_KEY = "shop:geo:";
     public static final String USER_SIGN_KEY = "sign:";
 
-    public static final String MQ_RETRY_ORDER_KEY = "mq:retry:order:";
+    /** Durable Redis outbox used between an atomic reservation and RabbitMQ publish. */
+    public static final String MQ_OUTBOX_ORDER_KEY = "mq:outbox:order:";
+    public static final String MQ_OUTBOX_PROCESSING_KEY = "mq:outbox:processing:";
 }

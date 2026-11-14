@@ -233,7 +233,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         // 1.获取用户id
         Long userId = UserHolder.getUser().getId();
         // 2.判断是否已下单
-        Integer count = lambdaQuery()
+        Long count = lambdaQuery()
                 .eq(VoucherOrder::getVoucherId, voucherId)
                 .eq(VoucherOrder::getUserId, userId)
                 .count();
